@@ -1,10 +1,10 @@
 import java.io.BufferedReader;
-import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.OutputStream;
 import java.net.Socket;
 import java.nio.charset.StandardCharsets;
+import java.util.ArrayList;
 
 public class HttpRequestHandler implements Runnable {
 
@@ -32,16 +32,48 @@ public class HttpRequestHandler implements Runnable {
         ) {
             socket.setSoTimeout(10000); // don't let idle clients hold a thread forever
             // -----------------------------------------------------------------
-            // [A1/A2 WORKING SKELETON - REPLACE THIS BLOCK WITH A3, A4, A5]
+            // [A3]
             // -----------------------------------------------------------------
             
             // Read the first line (Request Line) just to verify incoming data works
             BufferedReader reader = new BufferedReader(new InputStreamReader(in, StandardCharsets.UTF_8));
             String requestLine = reader.readLine();
-            System.out.println("[" + threadName + "] Received: " + requestLine);
+            ArrayList<String> requestHeader = new ArrayList<>();
+            String line;
+            int contentLength = 0;
+            while ((line = reader.readLine()) != null && !line.isEmpty()) {
+                requestHeader.add(line);
+
+                // Check for Content-Length header (case-insensitive check is safer)
+                if (line.toLowerCase().startsWith("content-length:")) {
+                    try {
+                        contentLength = Integer.parseInt(line.substring(15).trim());
+                    } catch (NumberFormatException e) {
+                        contentLength = 0;
+                    }
+                }
+            }
+
+            // 2. Read the body if Content-Length is specified
+            String requestBody = "";
+            if (contentLength > 0) {
+                char[] bodyChars = new char[contentLength];
+                int bytesRead = reader.read(bodyChars, 0, contentLength);
+                requestBody = new String(bodyChars, 0, bytesRead);
+            }
+
+            System.out.println(requestLine);
+            for (String header : requestHeader) {
+                System.out.println(header);
+            }
+            System.out.println(requestBody);
 
             // Simulate a 2-second processing delay so you can prove concurrency
             Thread.sleep(2000);
+
+            // -----------------------------------------------------------------
+            // [A3]
+            // -----------------------------------------------------------------
 
             // Build a valid minimal HTTP/1.1 response using CRLF (\r\n)
             String responseBody = "Handled by " + threadName + "\n";
