@@ -37,8 +37,11 @@ public class HttpRequestHandler implements Runnable {
             
             // Read the first line (Request Line) just to verify incoming data works
             BufferedReader reader = new BufferedReader(new InputStreamReader(in, StandardCharsets.UTF_8));
-            String requestLine = reader.readLine();
+            String[] requestLine = reader.readLine().split(" ");
             ArrayList<String> requestHeader = new ArrayList<>();
+            String method = requestLine[0];
+            String path = requestLine[1];
+            
             String line;
             int contentLength = 0;
             while ((line = reader.readLine()) != null && !line.isEmpty()) {
@@ -47,7 +50,7 @@ public class HttpRequestHandler implements Runnable {
                 // Check for Content-Length header (case-insensitive check is safer)
                 if (line.toLowerCase().startsWith("content-length:")) {
                     try {
-                        contentLength = Integer.parseInt(line.substring(15).trim());
+                        contentLength = Integer.parseInt(line.substring(line.length()-2).trim());
                     } catch (NumberFormatException e) {
                         contentLength = 0;
                     }
@@ -56,17 +59,18 @@ public class HttpRequestHandler implements Runnable {
 
             // 2. Read the body if Content-Length is specified
             String requestBody = "";
-            if (contentLength > 0) {
+            if (!method.toUpperCase().equals("GET")) {
                 char[] bodyChars = new char[contentLength];
                 int bytesRead = reader.read(bodyChars, 0, contentLength);
                 requestBody = new String(bodyChars, 0, bytesRead);
             }
 
-            System.out.println(requestLine);
-            for (String header : requestHeader) {
-                System.out.println(header);
-            }
-            System.out.println(requestBody);
+            // --------- PRINT BELOW JUST FOR DEBUGGING ---------
+            // System.out.println(requestLine);
+            // for (String header : requestHeader) {
+            //     System.out.println(header);
+            // }
+            // System.out.println(requestBody);
 
             // Simulate a 2-second processing delay so you can prove concurrency
             Thread.sleep(2000);
