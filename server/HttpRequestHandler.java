@@ -39,6 +39,7 @@ public class HttpRequestHandler implements Runnable {
             BufferedReader reader = new BufferedReader(new InputStreamReader(in, StandardCharsets.UTF_8));
             String requestLine = reader.readLine();
             ArrayList<String> requestHeader = new ArrayList<>();
+            String method = requestLine.split(" ")[0];
             String line;
             int contentLength = 0;
             while ((line = reader.readLine()) != null && !line.isEmpty()) {
@@ -56,17 +57,18 @@ public class HttpRequestHandler implements Runnable {
 
             // 2. Read the body if Content-Length is specified
             String requestBody = "";
-            if (contentLength > 0) {
+            if (!method.toUpperCase().equals("GET")) {
                 char[] bodyChars = new char[contentLength];
                 int bytesRead = reader.read(bodyChars, 0, contentLength);
                 requestBody = new String(bodyChars, 0, bytesRead);
             }
 
-            System.out.println(requestLine);
-            for (String header : requestHeader) {
-                System.out.println(header);
-            }
-            System.out.println(requestBody);
+            // --------- PRINT BELOW JUST FOR DEBUGGING ---------
+            // System.out.println(requestLine);
+            // for (String header : requestHeader) {
+            //     System.out.println(header);
+            // }
+            // System.out.println(requestBody);
 
             // Simulate a 2-second processing delay so you can prove concurrency
             Thread.sleep(2000);
