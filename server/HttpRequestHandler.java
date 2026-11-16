@@ -37,9 +37,11 @@ public class HttpRequestHandler implements Runnable {
             
             // Read the first line (Request Line) just to verify incoming data works
             BufferedReader reader = new BufferedReader(new InputStreamReader(in, StandardCharsets.UTF_8));
-            String requestLine = reader.readLine();
+            String[] requestLine = reader.readLine().split(" ");
             ArrayList<String> requestHeader = new ArrayList<>();
-            String method = requestLine.split(" ")[0];
+            String method = requestLine[0];
+            String path = requestLine[1];
+            
             String line;
             int contentLength = 0;
             while ((line = reader.readLine()) != null && !line.isEmpty()) {
@@ -48,7 +50,7 @@ public class HttpRequestHandler implements Runnable {
                 // Check for Content-Length header (case-insensitive check is safer)
                 if (line.toLowerCase().startsWith("content-length:")) {
                     try {
-                        contentLength = Integer.parseInt(line.substring(15).trim());
+                        contentLength = Integer.parseInt(line.substring(line.length()-2).trim());
                     } catch (NumberFormatException e) {
                         contentLength = 0;
                     }
