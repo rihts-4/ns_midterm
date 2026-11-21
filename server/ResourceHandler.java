@@ -91,16 +91,71 @@ public class ResourceHandler {
         }
     }
 
-//This is just a temporary testing main method to see whether it works.
-//    public static void main(String[] args) {
-//        System.out.println(new String(handle("POST", "/test.txt", "hello".getBytes())));
-//        System.out.println(new String(handle("GET", "/test.txt", new byte[0])));
-//        System.out.println(new String(handle("POST", "/test.txt", "again".getBytes())));
-//        System.out.println(new String(handle("PUT", "/test.txt", "bye".getBytes())));
-//        System.out.println(new String(handle("GET", "/test.txt", new byte[0])));
-//        System.out.println(new String(handle("DELETE", "/test.txt", new byte[0])));
-//        System.out.println(new String(handle("GET", "/test.txt", new byte[0])));
-//        System.out.println(new String(handle("GET", "/../secret.txt", new byte[0])));
-//        System.out.println(new String(handle("JUMP", "/test.txt", new byte[0])));
-//    }
+    /*
+     * Functional tests (8.1)
+     *
+     * 1. POST creates a new JSON file
+     * $ curl -i -X POST --data-binary '{"name":"Alice"}' http://localhost:8080/users/alice.json
+     * HTTP/1.1 201 Created
+     * Content-Length: 0
+     * Connection: close
+     *
+     * 2. GET retrieves the file and displays its contents
+     * $ curl -i http://localhost:8080/users/alice.json
+     * HTTP/1.1 200 OK
+     * Content-Type: application/json
+     * Content-Length: 16
+     * Connection: close
+     *
+     * {"name":"Alice"}
+     *
+     * 3. PUT changes the content, then GET returns the new content
+     * $ curl -i -X PUT --data-binary '{"name":"Alice","age":22}' http://localhost:8080/users/alice.json
+     * HTTP/1.1 204 No Content
+     * Content-Length: 0
+     * Connection: close
+     *
+     * $ curl -i http://localhost:8080/users/alice.json
+     * HTTP/1.1 200 OK
+     * Content-Type: application/json
+     * Content-Length: 25
+     * Connection: close
+     *
+     * {"name":"Alice","age":22}
+     *
+     * 4. DELETE removes the file, then GET returns 404
+     * $ curl -i -X DELETE http://localhost:8080/users/alice.json
+     * HTTP/1.1 204 No Content
+     * Content-Length: 0
+     * Connection: close
+     *
+     * $ curl -i http://localhost:8080/users/alice.json
+     * HTTP/1.1 404 Not Found
+     * Content-Length: 0
+     * Connection: close
+     *
+     * 5. POST to an existing file returns 409
+     * $ curl -i -X POST --data-binary '{"name":"Alice","age":21}' http://localhost:8080/users/alice.json
+     * HTTP/1.1 409 Conflict
+     * Content-Length: 0
+     * Connection: close
+     *
+     * 6. PUT to a missing file returns 404
+     * $ curl -i -X PUT --data-binary 'hi' http://localhost:8080/nothere.txt
+     * HTTP/1.1 404 Not Found
+     * Content-Length: 0
+     * Connection: close
+     *
+     * 7. Unsupported method returns 405
+     * $ curl -i -X PATCH http://localhost:8080/users/alice.json
+     * HTTP/1.1 405 Method Not Allowed
+     * Content-Length: 0
+     * Connection: close
+     *
+     * 8. Path escaping server_data/ is rejected
+     * $ curl -i --path-as-is http://localhost:8080/../../secret.txt
+     * HTTP/1.1 400 Bad Request
+     * Content-Length: 0
+     * Connection: close
+     */
 }
