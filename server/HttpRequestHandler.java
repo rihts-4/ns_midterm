@@ -6,6 +6,16 @@ import java.net.Socket;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 
+/*
+ * Part A3
+ * Request Parser for HTTP server
+ * Parses start line, headers and body. 
+ * Sends the start line information and body to ResourceHandler class to handle.
+ * Sends the output of ResourceHandler.handle() to the client.
+ * 
+ * Note: Body read is a while loop that does not stop until content length is reached.
+ */
+
 public class HttpRequestHandler implements Runnable {
 
     private final Socket clientSocket;
@@ -24,12 +34,8 @@ public class HttpRequestHandler implements Runnable {
             InputStream in = socket.getInputStream();
             OutputStream out = socket.getOutputStream()
         ) {
-            socket.setSoTimeout(10000); // don't let idle clients hold a thread forever
-            // -----------------------------------------------------------------
-            // [A3]
-            // -----------------------------------------------------------------
-            
-            // Read the first line (Request Line) just to verify incoming data works
+            socket.setSoTimeout(10000);
+
             BufferedReader reader = new BufferedReader(new InputStreamReader(in, StandardCharsets.UTF_8));
             String[] requestLine = reader.readLine().split(" ");
             ArrayList<String> requestHeader = new ArrayList<>();
@@ -66,8 +72,6 @@ public class HttpRequestHandler implements Runnable {
                 }
             }
 
-            System.out.println(requestHeader);
-
             char[] bodyBytes = new char[contentLength];
             String requestBody = "";
             if (!method.toUpperCase().equals("GET") && contentLength > 0) {
@@ -79,21 +83,7 @@ public class HttpRequestHandler implements Runnable {
                 }
                 requestBody = new String(bodyBytes);
             }
-
-            // --------- PRINT BELOW JUST FOR DEBUGGING ---------
-            // System.out.println(requestLine);
-            // for (String header : requestHeader) {
-            //     System.out.println(header);
-            // }
-            // System.out.println(requestBody);
-
-            // Simulate a 2-second processing delay so you can prove concurrency
-            // Thread.sleep(2000);
-
-            // -----------------------------------------------------------------
-            // [A3]
-            // -----------------------------------------------------------------
-
+            
             byte[] response = ResourceHandler.handle(method, path, version, requestBody.getBytes(StandardCharsets.UTF_8));
             out.write(response);
             out.flush();
