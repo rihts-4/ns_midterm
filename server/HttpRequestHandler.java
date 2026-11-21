@@ -41,6 +41,7 @@ public class HttpRequestHandler implements Runnable {
             ArrayList<String> requestHeader = new ArrayList<>();
             String method = requestLine[0];
             String path = requestLine[1];
+            String version = requestLine[2];
             
             String line;
             int contentLength = 0;
@@ -58,11 +59,13 @@ public class HttpRequestHandler implements Runnable {
             }
 
             // 2. Read the body if Content-Length is specified
-            String requestBody = "";
+            StringBuilder requestBody = new StringBuilder();
             if (!method.toUpperCase().equals("GET")) {
                 char[] bodyChars = new char[contentLength];
-                int bytesRead = reader.read(bodyChars, 0, contentLength);
-                requestBody = new String(bodyChars, 0, bytesRead);
+                int bytesRead;
+                while ((bytesRead = reader.read(bodyChars, 0, contentLength)) != -1) {
+                    requestBody.append(bodyChars, 0, bytesRead);
+                }
             }
 
             // --------- PRINT BELOW JUST FOR DEBUGGING ---------
@@ -79,7 +82,7 @@ public class HttpRequestHandler implements Runnable {
             // [A3]
             // -----------------------------------------------------------------
 
-            byte[] response = ResourceHandler.handle(method, path, requestBody.getBytes());
+            byte[] response = ResourceHandler.handle(method, path, requestBody.toString().getBytes(StandardCharsets.UTF_8));
             out.write(response);
             out.flush();
 
