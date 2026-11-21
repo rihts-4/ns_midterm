@@ -38,7 +38,7 @@ public class HttpRequestHandler implements Runnable {
             String version = requestLine[2];
             String host;
             String contentType;
-            String connection = "keep-alive";
+            String connection;
             String[] supportedHeaders = {"host", "content-length", "content-type", "connection"};
             
             String line;
@@ -92,7 +92,7 @@ public class HttpRequestHandler implements Runnable {
             // [A3]
             // -----------------------------------------------------------------
 
-            byte[] response = ResourceHandler.handle(method, path, version, connection, requestBody.getBytes(StandardCharsets.UTF_8));
+            byte[] response = ResourceHandler.handle(method, path, version, requestBody.getBytes(StandardCharsets.UTF_8));
             out.write(response);
             out.flush();
 
