@@ -54,7 +54,7 @@ public class HttpRequestHandler implements Runnable {
                             case "host" -> host = header.substring(header.indexOf(':') + 1).trim();
                             case "content-length" -> {
                                 try {
-                                    contentLength = Integer.parseInt(line.substring(line.indexOf(':') + 1).trim());
+                                    contentLength = Integer.parseInt(header.substring(header.indexOf(':') + 1).trim());
                                 } catch (NumberFormatException e) {
                                     contentLength = 0;
                                 }
@@ -65,6 +65,8 @@ public class HttpRequestHandler implements Runnable {
                     }
                 }
             }
+
+            System.out.println(requestHeader);
 
             char[] bodyBytes = new char[contentLength];
             String requestBody = "";
