@@ -9,11 +9,20 @@ import java.nio.file.Paths;
 
 public class ResourceHandler {
 
+    // Builds the reply with no Content-Type (used by all the other responses).
+    static byte[] buildResponse(int code, String reason, String version, byte[] body)
+    {
+        return buildResponse(code, reason, version, body, null);
+    }
+
     // Builds the reply: status line, headers, an empty line, then the body.
-    static byte[] buildResponse(int code, String reason, String version, byte[] body) {
-        String head = version + " " + code + " " + reason + "\r\n"
-                + "Content-Length: " + body.length + "\r\n"
-                + "Connection: close" + "\r\n"
+    // Adds a Content-Type line only if one is given.
+    static byte[] buildResponse(int code, String reason, String version, byte[] body, String contentType)
+    {
+        String head = version + " " + code + " " + reason + "\r\n";
+        if (contentType != null) head += "Content-Type: " + contentType + "\r\n";
+        head += "Content-Length: " + body.length + "\r\n"
+                + "Connection: close\r\n"
                 + "\r\n";
 
         ByteArrayOutputStream out = new ByteArrayOutputStream();
@@ -43,13 +52,14 @@ public class ResourceHandler {
     static synchronized byte[] handle(String method, String path, String version, byte[] body) {
         try {
             Path file = safePath(path);
-            if (file == null) return buildResponse(400, "Bad Request", version, body);
+            if (file == null) return buildResponse(400, "Bad Request", version, new byte[0]);
 
             // GET: read the file and send its content
             if (method.equals("GET")) {
                 if (!Files.exists(file)) return buildResponse(404, "Not Found", version, new byte[0]);
                 byte[] content = Files.readAllBytes(file);
-                return buildResponse(200, "OK", version, content);
+                String type = file.toString().endsWith(".json") ? "application/json" : "text/plain";
+                return buildResponse(200, "OK", version, content, type);
             }
 
             // POST: create a new file (409 if it already exists)
