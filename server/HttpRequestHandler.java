@@ -73,31 +73,15 @@ public class HttpRequestHandler implements Runnable {
             // System.out.println(requestBody);
 
             // Simulate a 2-second processing delay so you can prove concurrency
-            Thread.sleep(2000);
+            // Thread.sleep(2000);
 
             // -----------------------------------------------------------------
             // [A3]
             // -----------------------------------------------------------------
 
-            // Build a valid minimal HTTP/1.1 response using CRLF (\r\n)
-            String responseBody = "Handled by " + threadName + "\n";
-            byte[] bodyBytes = responseBody.getBytes(StandardCharsets.UTF_8); // UTF-8 byte length
-
-            String responseHeaders = 
-                "HTTP/1.1 200 OK\r\n" +
-                "Content-Type: text/plain; charset=UTF-8\r\n" +
-                "Content-Length: " + bodyBytes.length + "\r\n" +
-                "Connection: close\r\n" +
-                "\r\n"; // Blank line separating headers and body
-
-            // Send headers and body
-            out.write(responseHeaders.getBytes(StandardCharsets.UTF_8));
-            out.write(bodyBytes);
+            byte[] response = ResourceHandler.handle(method, path, requestBody.getBytes());
+            out.write(response);
             out.flush();
-
-            // -----------------------------------------------------------------
-            // [END OF TEMPORARY SKELETON]
-            // -----------------------------------------------------------------
 
         } catch (Exception e) {
             System.err.println("[" + threadName + "] Error processing request: " + e.getMessage());
