@@ -10,10 +10,10 @@ import java.nio.file.Paths;
 public class ResourceHandler {
 
     // Builds the reply: status line, headers, an empty line, then the body.
-    static byte[] buildResponse(int code, String reason, byte[] body) {
-        String head = "HTTP/1.1 " + code + " " + reason + "\r\n"
+    static byte[] buildResponse(int code, String reason, String version, String connection, byte[] body) {
+        String head = version + " " + code + " " + reason + "\r\n"
                 + "Content-Length: " + body.length + "\r\n"
-                + "Connection: close\r\n"
+                + "Connection: " + connection + "\r\n"
                 + "\r\n";
 
         ByteArrayOutputStream out = new ByteArrayOutputStream();
@@ -40,44 +40,44 @@ public class ResourceHandler {
 
     // Main method. Checks the method, does the file action, and returns the reply.
     // synchronized: only one thread can change files at a time.
-    static synchronized byte[] handle(String method, String path, byte[] body) {
+    static synchronized byte[] handle(String method, String path, String version, String connection, byte[] body) {
         try {
             Path file = safePath(path);
-            if (file == null) return buildResponse(400, "Bad Request", new byte[0]);
+            if (file == null) return buildResponse(400, "Bad Request", version, connection, new byte[0]);
 
             // GET: read the file and send its content
             if (method.equals("GET")) {
-                if (!Files.exists(file)) return buildResponse(404, "Not Found", new byte[0]);
+                if (!Files.exists(file)) return buildResponse(404, "Not Found", version, connection, new byte[0]);
                 byte[] content = Files.readAllBytes(file);
-                return buildResponse(200, "OK", content);
+                return buildResponse(200, "OK", version, connection, content);
             }
 
             // POST: create a new file (409 if it already exists)
             if (method.equals("POST")) {
-                if (Files.exists(file)) return buildResponse(409, "Conflict", new byte[0]);
+                if (Files.exists(file)) return buildResponse(409, "Conflict", version, connection, new byte[0]);
                 Files.createDirectories(file.getParent());
                 Files.write(file, body);
-                return buildResponse(201, "Created", new byte[0]);
+                return buildResponse(201, "Created", version, connection, new byte[0]);
             }
 
             // PUT: replace the file's content (404 if it doesn't exist)
             if (method.equals("PUT")) {
-                if (!Files.exists(file)) return buildResponse(404, "Not Found", new byte[0]);
+                if (!Files.exists(file)) return buildResponse(404, "Not Found", version, connection, new byte[0]);
                 Files.write(file, body);
-                return buildResponse(204, "No Content", new byte[0]);
+                return buildResponse(204, "No Content", version, connection, new byte[0]);
             }
 
             // DELETE: remove the file
             if (method.equals("DELETE")) {
-                if (!Files.exists(file)) return buildResponse(404, "Not Found", new byte[0]);
+                if (!Files.exists(file)) return buildResponse(404, "Not Found", version, connection, new byte[0]);
                 Files.delete(file);
-                return buildResponse(204, "No Content", new byte[0]);
+                return buildResponse(204, "No Content", version, connection, new byte[0]);
             }
 
-            return buildResponse(405, "Method Not Allowed", new byte[0]);
+            return buildResponse(405, "Method Not Allowed", version, connection, new byte[0]);
 
         } catch (Exception e) {
-            return buildResponse(500, "Internal Server Error", new byte[0]);
+            return buildResponse(500, "Internal Server Error", version, connection, new byte[0]);
         }
     }
 

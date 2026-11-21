@@ -10,7 +10,6 @@ public class HttpRequestHandler implements Runnable {
 
     private final Socket clientSocket;
 
-    // Constructor receives the accepted Socket from HttpServer
     public HttpRequestHandler(Socket clientSocket) {
         this.clientSocket = clientSocket;
     }
@@ -20,11 +19,6 @@ public class HttpRequestHandler implements Runnable {
         String threadName = Thread.currentThread().getName();
         System.out.println("[" + threadName + "] Started handling client.");
 
-        // Try-with-resources guarantees the Socket and streams close automatically
-        // after handling one request, even if an exception occurs.
-        //Note[not to wrap InputStream in in a BufferedReader when they implement real body 
-        //     reading, because BufferedReader buffers ahead in characters and makes reading exact 
-        //     Content-Length bytes[cite: 3] from the raw InputStream tricky.]
         try (
             Socket socket = this.clientSocket;
             InputStream in = socket.getInputStream();
@@ -42,30 +36,46 @@ public class HttpRequestHandler implements Runnable {
             String method = requestLine[0];
             String path = requestLine[1];
             String version = requestLine[2];
+            String host;
+            String contentType;
+            String connection = "keep-alive";
+            String[] supportedHeaders = {"host", "content-length", "content-type", "connection"};
             
             String line;
             int contentLength = 0;
             while ((line = reader.readLine()) != null && !line.isEmpty()) {
                 requestHeader.add(line);
+            }
 
-                // Check for Content-Length header (case-insensitive check is safer)
-                if (line.toLowerCase().startsWith("content-length:")) {
-                    try {
-                        contentLength = Integer.parseInt(line.substring(line.length()-2).trim());
-                    } catch (NumberFormatException e) {
-                        contentLength = 0;
+            for (String header : requestHeader) {
+                for (String supported : supportedHeaders) {
+                    if (header.toLowerCase().startsWith(supported + ":")) {
+                        switch (supported) {
+                            case "host" -> host = header.substring(header.indexOf(':') + 1).trim();
+                            case "content-length" -> {
+                                try {
+                                    contentLength = Integer.parseInt(line.substring(line.indexOf(':') + 1).trim());
+                                } catch (NumberFormatException e) {
+                                    contentLength = 0;
+                                }
+                            }
+                            case "content-type" -> contentType = header.substring(header.indexOf(':') + 1).trim();
+                            case "connection" -> connection = header.substring(header.indexOf(':') + 1).trim();
+                        }
                     }
                 }
             }
 
-            // 2. Read the body if Content-Length is specified
-            StringBuilder requestBody = new StringBuilder();
-            if (!method.toUpperCase().equals("GET")) {
-                char[] bodyChars = new char[contentLength];
-                int bytesRead;
-                while ((bytesRead = reader.read(bodyChars, 0, contentLength)) != -1) {
-                    requestBody.append(bodyChars, 0, bytesRead);
+            char[] bodyBytes = new char[contentLength];
+            String requestBody = "";
+            if (!method.toUpperCase().equals("GET") && contentLength > 0) {
+                int total = 0;
+                while (total < contentLength) {
+                    int n = reader.read(bodyBytes, total, contentLength - total);
+                    if (n == -1) break;
+                    total += n;
                 }
+                requestBody = new String(bodyBytes);
             }
 
             // --------- PRINT BELOW JUST FOR DEBUGGING ---------
@@ -82,7 +92,7 @@ public class HttpRequestHandler implements Runnable {
             // [A3]
             // -----------------------------------------------------------------
 
-            byte[] response = ResourceHandler.handle(method, path, requestBody.toString().getBytes(StandardCharsets.UTF_8));
+            byte[] response = ResourceHandler.handle(method, path, version, connection, requestBody.getBytes(StandardCharsets.UTF_8));
             out.write(response);
             out.flush();
 
